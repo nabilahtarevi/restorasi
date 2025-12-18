@@ -150,3 +150,86 @@ for fname, ffunc in filters.items():
     plt.ylabel("MSE")
     plt.grid(axis="y")
     plt.show()
+
+for fname, ffunc in filters.items():
+
+    print(f"\n=== GRAYSCALE | {fname} ===")
+
+    plt.figure(figsize=(14,8))
+    plt.subplot(2,3,1)
+    plt.imshow(img_gray, cmap="gray")
+    plt.title("Original Gray")
+    plt.axis("off")
+
+    mse_vals = []
+    idx = 2
+
+    for nname, nfunc in noise_funcs.items():
+        noisy = nfunc(img_gray)
+        filtered = ffunc(noisy)
+
+        nilai_mse = mse(img_gray, filtered)
+        mse_vals.append(nilai_mse)
+
+        print(f"{nname:<7} -> MSE = {nilai_mse:.2f}")
+
+        plt.subplot(2,3,idx)
+        plt.imshow(filtered, cmap="gray")
+        plt.title(nname)
+        plt.axis("off")
+
+        idx += 1
+
+    plt.suptitle(f"Grayscale - {fname}", fontsize=14)
+    plt.tight_layout()
+    plt.show()
+
+    plt.figure(figsize=(7,5))
+    plt.bar(noise_funcs.keys(), mse_vals)
+    plt.title(f"MSE Grayscale - {fname}")
+    plt.ylabel("MSE")
+    plt.grid(axis="y")
+    plt.show()
+
+for fname, ffunc in filters.items():
+
+    print(f"\n=== RGB | {fname} ===")
+
+    plt.figure(figsize=(14,8))
+    plt.subplot(2,3,1)
+    plt.imshow(img_rgb)
+    plt.title("Original RGB")
+    plt.axis("off")
+
+    mse_vals = []
+    idx = 2
+
+    for nname, nfunc in noise_funcs.items():
+        noisy_rgb = np.zeros_like(img_rgb)
+        for c in range(3):
+            noisy_rgb[:,:,c] = nfunc(img_rgb[:,:,c])
+
+        filtered_rgb = filter_rgb(noisy_rgb, ffunc)
+
+        nilai_mse = mse(img_rgb, filtered_rgb)
+        mse_vals.append(nilai_mse)
+
+        print(f"{nname:<7} -> MSE = {nilai_mse:.2f}")
+
+        plt.subplot(2,3,idx)
+        plt.imshow(filtered_rgb)
+        plt.title(nname)
+        plt.axis("off")
+
+        idx += 1
+
+    plt.suptitle(f"RGB - {fname}", fontsize=14)
+    plt.tight_layout()
+    plt.show()
+
+    plt.figure(figsize=(7,5))
+    plt.bar(noise_funcs.keys(), mse_vals)
+    plt.title(f"MSE RGB - {fname}")
+    plt.ylabel("MSE")
+    plt.grid(axis="y")
+    plt.show()
