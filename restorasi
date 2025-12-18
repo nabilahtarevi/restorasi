@@ -1,0 +1,152 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+
+img_rgb = cv2.imread("potrait_berwarna.jpg")
+img_rgb = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2RGB)
+
+img_gray = cv2.imread("potrait.jpg", 0)
+
+def noise_salt_pepper(image, prob):
+    noisy = image.copy()
+    h, w = image.shape
+    for i in range(h):
+        for j in range(w):
+            r = random.random()
+            if r < prob:
+                noisy[i,j] = 0
+            elif r > 1 - prob:
+                noisy[i,j] = 255
+    return noisy
+
+def noise_gaussian(image, sigma):
+    gauss = np.random.normal(0, sigma, image.shape)
+    noisy = image.astype(float) + gauss
+    return np.clip(noisy, 0, 255).astype(np.uint8)
+
+def min_filter(img):
+    p = np.pad(img, 1, mode="edge")
+    out = np.zeros_like(img)
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            out[i,j] = np.min(p[i:i+3, j:j+3])
+    return out
+
+def max_filter(img):
+    p = np.pad(img, 1, mode="edge")
+    out = np.zeros_like(img)
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            out[i,j] = np.max(p[i:i+3, j:j+3])
+    return out
+
+def mean_filter(img):
+    p = np.pad(img, 1, mode="edge")
+    out = np.zeros_like(img)
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            out[i,j] = np.mean(p[i:i+3, j:j+3])
+    return out
+
+def median_filter(img):
+    p = np.pad(img, 1, mode="edge")
+    out = np.zeros_like(img)
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            out[i,j] = np.median(p[i:i+3, j:j+3])
+    return out
+
+def filter_rgb(img, func):
+    out = img.copy()
+    for c in range(3):
+        out[:,:,c] = func(img[:,:,c])
+    return out
+
+def mse(a, b):
+    return np.mean((a.astype(float) - b.astype(float))**2)
+
+noise_funcs = {
+    "SP 0.02": lambda x: noise_salt_pepper(x, 0.02),
+    "SP 0.05": lambda x: noise_salt_pepper(x, 0.05),
+    "G 10": lambda x: noise_gaussian(x, 10),
+    "G 20": lambda x: noise_gaussian(x, 20)
+}
+
+filters = {
+    "Min Filter": min_filter,
+    "Max Filter": max_filter,
+    "Mean Filter": mean_filter,
+    "Median Filter": median_filter
+}
+
+for fname, ffunc in filters.items():
+
+    plt.figure(figsize=(14,8))
+    plt.subplot(2,3,1)
+    plt.imshow(img_gray, cmap="gray")
+    plt.title("Original Gray")
+    plt.axis("off")
+
+    mse_vals = []
+    idx = 2
+
+    for nname, nfunc in noise_funcs.items():
+        noisy = nfunc(img_gray)
+        filtered = ffunc(noisy)
+
+        plt.subplot(2,3,idx)
+        plt.imshow(filtered, cmap="gray")
+        plt.title(nname)
+        plt.axis("off")
+
+        mse_vals.append(mse(img_gray, filtered))
+        idx += 1
+
+    plt.suptitle(f"Grayscale - {fname}", fontsize=14)
+    plt.tight_layout()
+    plt.show()
+
+    plt.figure(figsize=(7,5))
+    plt.bar(noise_funcs.keys(), mse_vals)
+    plt.title(f"MSE Grayscale - {fname}")
+    plt.ylabel("MSE")
+    plt.grid(axis="y")
+    plt.show()
+
+for fname, ffunc in filters.items():
+
+    plt.figure(figsize=(14,8))
+    plt.subplot(2,3,1)
+    plt.imshow(img_rgb)
+    plt.title("Original RGB")
+    plt.axis("off")
+
+    mse_vals = []
+    idx = 2
+
+    for nname, nfunc in noise_funcs.items():
+        noisy_rgb = np.zeros_like(img_rgb)
+        for c in range(3):
+            noisy_rgb[:,:,c] = nfunc(img_rgb[:,:,c])
+
+        filtered_rgb = filter_rgb(noisy_rgb, ffunc)
+
+        plt.subplot(2,3,idx)
+        plt.imshow(filtered_rgb)
+        plt.title(nname)
+        plt.axis("off")
+
+        mse_vals.append(mse(img_rgb, filtered_rgb))
+        idx += 1
+
+    plt.suptitle(f"RGB - {fname}", fontsize=14)
+    plt.tight_layout()
+    plt.show()
+
+    plt.figure(figsize=(7,5))
+    plt.bar(noise_funcs.keys(), mse_vals)
+    plt.title(f"MSE RGB - {fname}")
+    plt.ylabel("MSE")
+    plt.grid(axis="y")
+    plt.show()
